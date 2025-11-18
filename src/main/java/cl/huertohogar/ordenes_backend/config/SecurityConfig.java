@@ -13,12 +13,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable()
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/v1/**").permitAll()  // Permite acceso sin autenticación
-                .anyRequest().authenticated()
-            )
-            .httpBasic();
+                .anyRequest().permitAll()  // Todos los endpoints públicos
+            );
         
         return http.build();
     }

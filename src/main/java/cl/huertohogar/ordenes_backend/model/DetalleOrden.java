@@ -30,7 +30,7 @@ public class DetalleOrden {
     private Integer idDetalleOrden;
 
     @ManyToOne
-    @JoinColumn(name = "id_orden")
+    @JoinColumn(name = "id_orden", nullable = false)
     @JsonBackReference
     private Orden orden;
 
