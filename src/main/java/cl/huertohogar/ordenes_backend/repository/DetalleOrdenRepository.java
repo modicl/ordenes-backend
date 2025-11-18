@@ -10,7 +10,7 @@ import cl.huertohogar.ordenes_backend.model.DetalleOrden;
 public interface DetalleOrdenRepository extends JpaRepository<DetalleOrden, Integer>{
     
     // Query para buscar por id de orden
-    @Query("SELECT d FROM DetalleOrden d WHERE d.orden.idOrden = :id")
-    List<DetalleOrden> findByIdOrden(Integer id);
+    @Query(value = "SELECT * FROM detalle_ordenes WHERE id_orden = ?1",nativeQuery = true)
+    List<DetalleOrden> findByOrden_IdOrden(Integer id);
 
 }

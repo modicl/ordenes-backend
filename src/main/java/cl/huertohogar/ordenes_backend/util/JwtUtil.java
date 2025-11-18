@@ -3,13 +3,12 @@ package cl.huertohogar.ordenes_backend.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JwtUtil {
     
-    private String secretKey = "profesorsaavedraporfavorpongame-un-7-en-el-examenporfavorgracias";
+    private String secretKey = "profesorsaavedraporfavorpongame-un-7-en-el-examenporfavorgracias"; // Esto debe estar en un .env , pero por razones academicas dejemoslo asi por ahora
 
     public Integer obtenerIdUsuarioDelToken(String token) {
         try {

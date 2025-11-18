@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import cl.huertohogar.ordenes_backend.dto.DetalleOrdenSimpleDTO;
 import cl.huertohogar.ordenes_backend.exception.DetalleOrdenNotFoundException;
 import cl.huertohogar.ordenes_backend.model.DetalleOrden;
 import cl.huertohogar.ordenes_backend.repository.DetalleOrdenRepository;
@@ -14,7 +15,7 @@ import jakarta.transaction.Transactional;
 @Service
 @Transactional
 public class DetalleOrdenService {
-    
+
     @Autowired
     private DetalleOrdenRepository detalleOrdenRepository;
 
@@ -30,10 +31,10 @@ public class DetalleOrdenService {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("El ID del detalle debe ser un número positivo válido");
         }
-        
+
         return detalleOrdenRepository.findById(id)
                 .orElseThrow(() -> new DetalleOrdenNotFoundException(
-                    "Detalle de orden no encontrado con ID: " + id));
+                        "Detalle de orden no encontrado con ID: " + id));
     }
 
     public List<DetalleOrden> obtenerDetallesPorOrden(Integer idOrden) {
@@ -41,36 +42,68 @@ public class DetalleOrdenService {
             throw new IllegalArgumentException("El ID de la orden es incorrecto");
         }
 
-        List<DetalleOrden> detalles = detalleOrdenRepository.findByIdOrden(idOrden);
+        List<DetalleOrden> detalles = detalleOrdenRepository.findByOrden_IdOrden(idOrden);
 
-        if(detalles.isEmpty()){
+        if (detalles.isEmpty()) {
             throw new DetalleOrdenNotFoundException("No se encontraron detalles para la orden con ID: " + idOrden);
         }
-        
+
         return detalles;
     }
 
+    public List<DetalleOrdenSimpleDTO> obtenerDetallesPorOrdenDTO(Integer idOrden) {
+        if (idOrden == null || idOrden <= 0) {
+            throw new IllegalArgumentException("El ID de la orden es incorrecto");
+        }
+
+        List<DetalleOrden> detalles = detalleOrdenRepository.findByOrden_IdOrden(idOrden);
+
+        // 🔍 DEBUG: Ver cuántos trae de la BD
+        System.out.println("📊 Detalles encontrados en BD: " + detalles.size());
+        detalles.forEach(
+                d -> System.out.println("  - ID: " + d.getIdDetalleOrden() + ", Producto: " + d.getIdProducto()));
+
+        if (detalles.isEmpty()) {
+            throw new DetalleOrdenNotFoundException("No se encontraron detalles para la orden con ID: " + idOrden);
+        }
+
+        // Generamos el DTO
+        List<DetalleOrdenSimpleDTO> detallesDTO = detalles.stream().map(detalle -> {
+            DetalleOrdenSimpleDTO detalleDTO = new DetalleOrdenSimpleDTO();
+            detalleDTO.setIdOrden(detalle.getOrden().getIdOrden());
+            detalleDTO.setIdDetalle(detalle.getIdDetalleOrden());
+            detalleDTO.setIdProducto(detalle.getIdProducto());
+            detalleDTO.setCantidad(detalle.getCantidad());
+            detalleDTO.setPrecioUnitario(detalle.getPrecioUnitario());
+            return detalleDTO;
+        }).toList();
+
+        // 🔍 DEBUG: Ver cuántos DTOs se crearon
+        System.out.println("📦 DTOs creados: " + detallesDTO.size());
+
+        return detallesDTO;
+    }
 
     public DetalleOrden crearDetalle(DetalleOrden detalle) {
         try {
             if (detalle == null) {
                 throw new IllegalArgumentException("El detalle de orden no puede ser nulo");
             }
-            
+
             if (detalle.getIdProducto() == null || detalle.getIdProducto() <= 0) {
                 throw new IllegalArgumentException("El ID del producto es requerido y debe ser válido");
             }
-            
+
             if (detalle.getCantidad() == null || detalle.getCantidad() <= 0) {
                 throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
             }
-            
+
             if (detalle.getPrecioUnitario() == null || detalle.getPrecioUnitario() < 0) {
                 throw new IllegalArgumentException("El precio unitario debe ser mayor o igual a 0");
             }
-            
+
             return detalleOrdenRepository.save(detalle);
-            
+
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (DataAccessException e) {
@@ -83,26 +116,27 @@ public class DetalleOrdenService {
             if (detalle == null) {
                 throw new IllegalArgumentException("El detalle de orden no puede ser nulo");
             }
-            
+
             if (detalle.getIdDetalleOrden() == null || detalle.getIdDetalleOrden() <= 0) {
                 throw new IllegalArgumentException("El ID del detalle es requerido para actualizar");
             }
-            
+
             // Verificar que el detalle exista
             detalleOrdenRepository.findById(detalle.getIdDetalleOrden())
                     .orElseThrow(() -> new DetalleOrdenNotFoundException(
-                        "No se puede actualizar. Detalle de orden no encontrado con ID: " + detalle.getIdDetalleOrden()));
-            
+                            "No se puede actualizar. Detalle de orden no encontrado con ID: "
+                                    + detalle.getIdDetalleOrden()));
+
             if (detalle.getCantidad() != null && detalle.getCantidad() <= 0) {
                 throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
             }
-            
+
             if (detalle.getPrecioUnitario() != null && detalle.getPrecioUnitario() < 0) {
                 throw new IllegalArgumentException("El precio unitario debe ser mayor o igual a 0");
             }
-            
+
             return detalleOrdenRepository.save(detalle);
-            
+
         } catch (IllegalArgumentException | DetalleOrdenNotFoundException e) {
             throw e;
         } catch (DataAccessException e) {
@@ -115,14 +149,14 @@ public class DetalleOrdenService {
             if (id == null || id <= 0) {
                 throw new IllegalArgumentException("El ID del detalle debe ser un número positivo válido");
             }
-            
+
             // Verificar que el detalle exista antes de eliminar
             detalleOrdenRepository.findById(id)
                     .orElseThrow(() -> new DetalleOrdenNotFoundException(
-                        "No se puede eliminar. Detalle de orden no encontrado con ID: " + id));
-            
+                            "No se puede eliminar. Detalle de orden no encontrado con ID: " + id));
+
             detalleOrdenRepository.deleteById(id);
-            
+
         } catch (IllegalArgumentException | DetalleOrdenNotFoundException e) {
             throw e;
         } catch (DataAccessException e) {

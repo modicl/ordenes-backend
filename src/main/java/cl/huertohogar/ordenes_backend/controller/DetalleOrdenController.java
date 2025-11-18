@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,14 +13,25 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import cl.huertohogar.ordenes_backend.dto.DetalleOrdenSimpleDTO;
 import cl.huertohogar.ordenes_backend.exception.DetalleOrdenNotFoundException;
 import cl.huertohogar.ordenes_backend.model.DetalleOrden;
 import cl.huertohogar.ordenes_backend.service.DetalleOrdenService;
 
 @RestController
 @RequestMapping("/api/v1/detalles-ordenes")
+@CrossOrigin(
+    origins = {
+        "http://localhost:5173",
+        "https://huertohogar.nyc3.cdn.digitaloceanspaces.com",
+        "http://huertohogar-frontend.s3-website-us-east-1.amazonaws.com"
+    },
+    allowedHeaders = "*",
+    methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
+)
 public class DetalleOrdenController {
 
     @Autowired
@@ -50,9 +62,9 @@ public class DetalleOrdenController {
     }
 
     @GetMapping("/orden/{idOrden}")
-    public ResponseEntity<List<DetalleOrden>> obtenerDetallesPorOrden(@PathVariable Integer idOrden) {
+    public ResponseEntity<List<DetalleOrdenSimpleDTO>> obtenerDetallesPorOrden(@PathVariable Integer idOrden) {
         try {
-            List<DetalleOrden> detalles = detalleOrdenService.obtenerDetallesPorOrden(idOrden);
+            List<DetalleOrdenSimpleDTO> detalles = detalleOrdenService.obtenerDetallesPorOrdenDTO(idOrden);
             return ResponseEntity.ok(detalles);
         } catch (DetalleOrdenNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
