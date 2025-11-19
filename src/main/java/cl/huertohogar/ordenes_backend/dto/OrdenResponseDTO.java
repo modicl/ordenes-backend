@@ -7,8 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import cl.huertohogar.ordenes_backend.client.UsuarioFeignClient;
-import cl.huertohogar.ordenes_backend.model.DetalleOrden;
+
 
 // Esta es la respuesta que devolvemos para cada orden ya que trae el usuario
 
