@@ -295,4 +295,48 @@ public class OrdenService {
             throw new RuntimeException("Error al eliminar la orden de la base de datos", e);
         }
     }
+
+    public Orden patchOrden(Integer idOrden, java.util.Map<String, Object> updates) {
+        try {
+            // 1. Validar Token y Rol ADMIN
+            String token = request.getHeader("Authorization");
+            if (token == null || token.isEmpty()) {
+                throw new UsuarioServiceException("Token no encontrado en la solicitud");
+            }
+
+            String rol = jwtUtil.extractRol(token);
+            if (!"ADMIN".equals(rol)) {
+                throw new UsuarioServiceException("Acceso denegado: Se requiere rol ADMIN");
+            }
+
+            // 2. Buscar Orden
+            Orden orden = ordenRepository.findById(idOrden)
+                    .orElseThrow(() -> new OrdenNotFoundException("Orden no encontrada con ID: " + idOrden));
+
+            // 3. Aplicar actualizaciones
+            updates.forEach((key, value) -> {
+                switch (key) {
+                    case "estado":
+                        orden.setEstado((String) value);
+                        break;
+                    case "direccionEnvio":
+                        orden.setDireccionEnvio((String) value);
+                        break;
+                    case "totalOrden":
+                        if (value instanceof Number) {
+                            orden.setTotalOrden(((Number) value).intValue());
+                        }
+                        break;
+                }
+            });
+
+            // 4. Guardar
+            return ordenRepository.save(orden);
+
+        } catch (OrdenNotFoundException | UsuarioServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error al actualizar parcialmente la orden", e);
+        }
+    }
 }
