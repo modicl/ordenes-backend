@@ -1,13 +1,19 @@
 package cl.huertohogar.ordenes_backend.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import cl.huertohogar.ordenes_backend.client.ProductoFeignClient;
 import cl.huertohogar.ordenes_backend.client.UsuarioFeignClient;
+import cl.huertohogar.ordenes_backend.dto.ActualizacionStockRequestDTO;
+import cl.huertohogar.ordenes_backend.dto.ActualizacionStockResponseDTO;
 import cl.huertohogar.ordenes_backend.dto.DetalleOrdenDTO;
+import cl.huertohogar.ordenes_backend.dto.ItemOrdenDTO;
 import cl.huertohogar.ordenes_backend.dto.OrdenResponseDTO;
 import cl.huertohogar.ordenes_backend.dto.ProductoDTO;
 import cl.huertohogar.ordenes_backend.dto.UsuarioDTO;
@@ -42,6 +48,11 @@ public class OrdenService {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Value("${jwt.secret}")
+    private String secret;
+
+    @Value("${jwt.expiration")
 
     // Obtiene todas las ordenes enriquecidas
     public List<OrdenResponseDTO> obtenerOrdenes() {
@@ -231,6 +242,43 @@ public class OrdenService {
                 throw new IllegalArgumentException("El total de la orden debe ser mayor o igual a 0");
             }
 
+            // ========== PASO 1: VALIDAR Y ACTUALIZAR STOCK ==========
+            // Preparar request para actualizar stock
+            ActualizacionStockRequestDTO stockRequest = new ActualizacionStockRequestDTO();
+            Integer numeroRandom = (int) (Math.random() * 100);
+            stockRequest.setIdOrden(numeroRandom); // ID temporal
+
+            List<ItemOrdenDTO> items = orden.getDetalleOrden().stream()
+                    .map(detalle -> new ItemOrdenDTO(
+                            detalle.getIdProducto(),
+                            detalle.getCantidad()))
+                    .collect(Collectors.toList());
+
+            stockRequest.setItems(items);
+
+            ResponseEntity<ActualizacionStockResponseDTO> stockResponse;
+
+            try {
+                stockResponse = productoFeignClient.actualizarStock(stockRequest,secret);
+
+                if (stockResponse.getBody() == null || !stockResponse.getBody().isExitoso()) {
+                    throw new RuntimeException("No se pudo actualizar el stock: " +
+                            (stockResponse.getBody() != null ? stockResponse.getBody().getMensaje()
+                                    : "Respuesta vacía"));
+                }
+            } catch (FeignException e) {
+                // Manejar errores específicos de Feign
+                if (e.status() == 404) {
+                    throw new RuntimeException("Uno o más productos no fueron encontrados");
+                } else if (e.status() == 409) {
+                    throw new RuntimeException("Stock insuficiente para uno o más productos");
+                } else {
+                    throw new RuntimeException("Error al comunicarse con el servicio de productos: " + e.getMessage());
+                }
+            }
+
+            // Creando la orden
+
             // Establecer la relación bidireccional ANTES de guardar (en español : dejamos
             // la id de la orden en id_orden de detalleOrden)
             if (orden.getDetalleOrden() != null && !orden.getDetalleOrden().isEmpty()) {
@@ -242,6 +290,8 @@ public class OrdenService {
             return ordenRepository.save(orden);
 
         } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Error al crear la orden en la base de datos", e);
